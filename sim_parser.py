@@ -18,6 +18,7 @@ hitcount = re.compile(r"\|-hitcount\|p(?P<side>1|2)(?P<position>a|b)?:\ (?P<poke
 
 time = re.compile(r"\|t:\|(?P<time>[0-9]+)", re.VERBOSE)
 turn = re.compile(r"\|turn\|(?P<turn>[0-9]+)", re.VERBOSE)
+split = re.compile(r"\|split\|p(?P<side>1|2)", re.VERBOSE)
 upkeep = re.compile(r"\|upkeep", re.VERBOSE)
 starttext = re.compile(r"\|start", re.VERBOSE)
 clearpoke = re.compile(r"\|clearpoke", re.VERBOSE)
@@ -74,7 +75,7 @@ def prin(arg):
     if False:
         print(arg)
 
-def outputParser(text, newState):
+def outputParser(text, newState, result):
 
     match = actualhp.match(text)
     if match != None:
@@ -111,53 +112,56 @@ def outputParser(text, newState):
         pokemon.hp = 0
         pokemon.faint = 'dead'
 
-        return
-
-    match = switch.match(text)
-    if match != None:
-        # The switching another pokemon in
-        # side, position, pokeout, pokein, level, gender?, hp, maxhp
-        prin("switch")
-
-        team = newState.team1
-        if match.group('side') == '2':
-            team = newState.team2
-
-        idx = -1
-        for i in range(6):
-            if team.full[i].name == match.group('pokein'):
-                idx = i
-                break
-
-        if match.group('position') == 'a':
-            team.active[0] = team.full[idx]
-        else:
-            team.active[1] = team.full[idx]
+        if result != None and result[1] == 'switch':
+            return (result[0], 'do switch')
 
         return
 
-    match = drag.match(text)
-    if match != None:
-        # The switching another pokemon in
-        # side, position, pokeout, pokein, level, gender?, hp, maxhp
-        prin("switch")
+#     match = switch.match(text)
+#     if match != None:
+#         # The switching another pokemon in
+#         # side, position, pokeout, pokein, level, gender?, hp, maxhp
+#         prin("switch")
 
-        team = newState.team1
-        if match.group('side') == '2':
-            team = newState.team2
+#         team = newState.team1
+#         if match.group('side') == '2':
+#             team = newState.team2
 
-        idx = -1
-        for i in range(6):
-            if team.full[i].name == match.group('pokein'):
-                idx = i
-                break
+#         idx = -1
+#         for i in range(6):
+#             if team.full[i].name == match.group('pokein'):
+#                 idx = i
+#                 break
 
-        if match.group('position') == 'a':
-            team.active[0] = team.full[idx]
-        else:
-            team.active[1] = team.full[idx]
+#         if match.group('position') == 'a':
+#             team.active[0] = team.full[idx]
+#         else:
+#             team.active[1] = team.full[idx]
 
-        return
+#         return
+
+#     match = drag.match(text)
+#     if match != None:
+#         # The switching another pokemon in
+#         # side, position, pokeout, pokein, level, gender?, hp, maxhp
+#         prin("switch")
+
+#         team = newState.team1
+#         if match.group('side') == '2':
+#             team = newState.team2
+
+#         idx = -1
+#         for i in range(6):
+#             if team.full[i].name == match.group('pokein'):
+#                 idx = i
+#                 break
+
+#         if match.group('position') == 'a':
+#             team.active[0] = team.full[idx]
+#         else:
+#             team.active[1] = team.full[idx]
+
+#         return
 
     match = heal.match(text)
     if match != None:
@@ -216,6 +220,9 @@ def outputParser(text, newState):
         amt = match.group('amount')
 
         pokemon.boosts[stat] -= int(amt)
+        
+        if result != None and result[1] == 'switch':
+            return (result[0], 'do switch')
 
         return
 
@@ -365,7 +372,6 @@ def outputParser(text, newState):
         else:
             pokemon.item = data
 
-
         return
 
     match = clearnegativeboost.match(text)
@@ -499,7 +505,43 @@ def outputParser(text, newState):
 
         return
 
+    match = move.match(text)
+    if match != None:
+        # The used move
+        # side, position, pokemon, move, targetside, targetposition, target
+        prin("move")
+
+        switch_moves = ['Volt Switch', 'Baton Pass', 'Flip Turn', 'Parting Shot', 'Teleport', 'U-turn']
+        
+        if match.group('move') in switch_moves:
+            return (match.group('side'), 'switch')
+
+        return
+
+    match = split.match(text)
+    if match != None:
+        # The used move
+        # side
+        prin("split")
+        
+        if result != None and result[1] == 'switch':
+            return (result[0], 'do switch')
+
+        return
+
+    match = crit.match(text)
+    if match != None:
+        # A critical hit
+        # side, position, pokemon
+        prin("crit")
+        
+        if result != None and result[1] == 'switch':
+            return (result[0], 'do switch')
+
+        return
+
     return
+
 
     if percenthp.match(text) != None:
         # This is percent HP
@@ -526,7 +568,7 @@ def outputParser(text, newState):
 
         # No work needed
 
-        return ''
+        return
 
     if upkeep.match(text) != None:
         # The upkeep text
@@ -645,15 +687,6 @@ def outputParser(text, newState):
 
         return
 
-    if move.match(text) != None:
-        # The used move
-        # side, position, pokemon, move, targetside, targetposition, target
-        prin("move")
-
-        # No work needed
-
-        return
-
     if persistmove.match(text) != None:
         # A move with a lasting effect
         # side, position, pokemon, move
@@ -723,15 +756,6 @@ def outputParser(text, newState):
         prin("win")
 
         # Todo: Will implement later
-
-        return
-
-    if crit.match(text) != None:
-        # A critical hit
-        # side, position, pokemon
-        prin("crit")
-
-        # No work needed
 
         return
 

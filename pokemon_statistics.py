@@ -34,37 +34,26 @@ nature_changes = {'Adamant':['atk','spa'],
 
 def getPikalytics(pokename, num_moves=4, num_items=1, num_abilities=1, num_natures=1):
     
-    stat_entry_term = '</div>\n                    </span>\n                    <div style="display:inline-block;vertical-align: middle;margin-left: 20px;">.*</div>'
-    stat_entry = re.compile(stat_entry_term)
-    
-    move_entry_term = '<div class="pokedex-move-entry-new">\n                  <div style="margin-left:10px;display:inline-block;">.*</div>\n                  <div style="display:inline-block;color:#333;">'
-    move_entry = re.compile(move_entry_term)
+    type_entry = re.compile('<span class="type (?P<type>[a-zA-Z]+)">[a-zA-Z]+</span>')
 
-    item_entry_term = '</div>\n                  </div>\n                  <div style="display:inline-block;">.*</div>'
-    item_entry = re.compile(item_entry_term)
-   
-    ability_entry_term = '<div class="pokedex-move-entry-new">\n                  <div style="margin-left:10px;display:inline-block;">.*</div>\n                    <div style="display:inline-block;float:right;">'
-    ability_entry = re.compile(ability_entry_term)
-   
-    nature_entry_term = '<div style="margin-left:10px;display:inline-block;">.*</div>'
-    nature_entry = re.compile(nature_entry_term)
+    stat_entry = re.compile('</div>\n\s+</span>\n\s+<div style="display:inline-block;vertical-align: middle;margin-left: 20px;">(?P<stat>[0-9]{1,3})</div>')
     
-    ev_entry_term = '<div style="display:inline-block;">.{1,4}</div>'
-    ev_entry = re.compile(ev_entry_term)
+    move_entry = re.compile('<div class="pokedex-move-entry-new">\n\s+<div style="margin-left:10px;display:inline-block;">(?P<move>.+)</div>\n\s+<div style="display:inline-block;color:#333;">')
+
+    item_entry = re.compile('</div>\n\s+</div>\n\s+<div style="display:inline-block;">(?P<item>.+)</div>')
+
+    ability_entry = re.compile('<div class="pokedex-move-entry-new">\n\s+<div style="margin-left:10px;display:inline-block;">(?P<ability>.+)</div>\n\s+<div style="display:inline-block;float:right;">')
+
+    nature_entry = re.compile('<div style="margin-left:10px;display:inline-block;">(?P<nature>.*)</div>')
+
+    ev_entry = re.compile('<div style="display:inline-block;">(?P<ev>[0-9]{1,4})/?</div>')
 
     
  
-    moves_wrapper_term = '<div id="moves_wrapper">'
-    moves_wrapper = re.compile(moves_wrapper_term)
-
-    item_wrapper_term = '<div id="items_wrapper">'
-    item_wrapper = re.compile(item_wrapper_term)
-
-    abilities_wrapper_term = '<div id="abilities_wrapper">'
-    abilities_wrapper = re.compile(abilities_wrapper_term)
-
-    nature_wrapper_term = '<div id="dex_spreads_wrapper" style="">'
-    nature_wrapper = re.compile(nature_wrapper_term)
+    moves_wrapper = re.compile('<div id="moves_wrapper">')
+    item_wrapper = re.compile('<div id="items_wrapper">')
+    abilities_wrapper = re.compile('<div id="abilities_wrapper">')
+    nature_wrapper = re.compile('<div id="dex_spreads_wrapper" style="">')
     
     
     
@@ -72,90 +61,90 @@ def getPikalytics(pokename, num_moves=4, num_items=1, num_abilities=1, num_natur
     
     stat_names = ['hp', 'atk', 'def', 'spa', 'spd', 'spe']
     stats = {}
+    typing = []
     moves = []
     items = []
     abilities = []
     nature = []
 
-    i = 0
-    while (i < 6):
-        res = re.search(stat_entry, text)
-        if (res == None):
+    for i in range(2):
+        match = re.search(type_entry, text) 
+        if (match == None):
             break;
-        stats[stat_names[i]] = int(text[res.span()[0]:res.span()[1]][131:-6])
-        text = text[res.span()[1]:]
-        i += 1
+        typing.append(match.group(1))
+        text = text[match.span()[1]:]
+        if (text[:7] == '</span>'):
+            break
+    
+    for i in range(6):
+        match = re.search(stat_entry, text) 
+        if (match == None):
+            break;
+        stats[stat_names[i]] = int(match.group(1))
+        text = text[match.span()[1]:]
     
     res = re.search(moves_wrapper, text)
     text = text[res.span()[1]:]
 
-    i = 0
-    while (i < num_moves):
-        i += 1
-        res = re.search(move_entry, text)
-        if (res == None):
+    for i in range(num_moves):
+        match = re.search(move_entry, text)
+        if (match == None):
             break;
-        elif (text[res.span()[0]:res.span()[1]][107:-71] == 'Other'):
+        elif (match.group(1) == 'Other'):
             break
-        moves.append(text[res.span()[0]:res.span()[1]][107:-71])
-        text = text[res.span()[1]:]
+        moves.append(match.group(1))
+        text = text[match.span()[1]:]
 
     res = re.search(item_wrapper, text)
     text = text[res.span()[1]:]
     
 
-    i = 0
-    while (i < num_items):
-        i += 1
-        res = re.search(item_entry, text)
-        if (res == None):
+    for i in range(num_items):
+        match = re.search(item_entry, text)
+        if (match == None):
             break;
-        elif (text[res.span()[0]:res.span()[1]][85:-6] == 'Other'):
+        elif (match.group(1) == 'Other'):
             break
-        items.append(text[res.span()[0]:res.span()[1]][85:-6])
-        text = text[res.span()[1]:]
+        items.append(match.group(1))
+        text = text[match.span()[1]:]
 
     res = re.search(abilities_wrapper, text)
     text = text[res.span()[1]:]
     
 
-    i = 0
-    while (i < num_abilities):
-        i += 1
-        res = re.search(ability_entry, text)
-        if (res == None):
+    for i in range(num_abilities):
+        match = re.search(ability_entry, text)
+        if (match == None):
             break;
-        abilities.append(text[res.span()[0]:res.span()[1]][107:-74])
-        text = text[res.span()[1]:]
+        elif (match.group(1) == '{{nature}}'):
+            break
+        abilities.append(match.group(1))
+        text = text[match.span()[1]:]
 
     res = re.search(nature_wrapper, text)
     text = text[res.span()[1]:]
     
 
-    i = 0
-    while (i < num_natures):
-        i += 1
+    for i in range(num_natures):
         obj = {}
-        res = re.search(nature_entry, text)
-        if (res == None):
+        match = re.search(nature_entry, text)
+        if (match == None):
             break
-        elif ("{{move}}" in text[res.span()[0]:res.span()[1]][52:-6]):
+        elif (match.group(1) == '{{move}}'):
             break
-        obj['nature'] = text[res.span()[0]:res.span()[1]][52:-6]
-        text = text[res.span()[1]:]
+        obj['nature'] = match.group(1)
+        text = text[match.span()[1]:]
         
-        j = 0
-        while (j < 6):
-            res = re.search(ev_entry, text)
-            if (res == None):
+        for j in range(6):
+            match = re.search(ev_entry, text)
+            if (match == None):
                 break;
-            obj[stat_names[j]] = int(text[res.span()[0]:res.span()[1]][35:-6].replace("/", ""))
-            text = text[res.span()[1]:]
-            j += 1
+            obj[stat_names[j]] = int(match.group(1))
+            text = text[match.span()[1]:]
         
         nature.append(obj)
     
-    return stats, moves, items, abilities, nature
+    return stats, moves, items, abilities, nature, typing
 
 def calcStats(pokemon, pika_stats, lvl=50):
     # atk, def, spa, spd, spe = floor( ( 2 * base + iv + floor(ev / 4) ) * lvl / 100 ) + 5
@@ -201,6 +190,8 @@ def updatePred(pokemon, pika_stats):
         
     if pokemon.item == '':
         pokemon.pred_item = items[0].replace(' ', '')
+        
+    pokemon.typing = pika_stats[5]
 
 def createPikalyticsPokemon(pokename):
     poke = pokemon(pokename)

@@ -1348,6 +1348,8 @@ export class Side {
                     this.battle.add(move.id, move.target);
                 }
 
+                this.customCmd = true;
+
                 break;
             case 'fainted':
                 pokemon = this.active[pos];
@@ -1357,6 +1359,48 @@ export class Side {
                     pokemon.fainted = false;
                 } else {
                     pokemon.fainted = true;
+                }
+
+                this.customCmd = true;
+
+                break;
+            case 'reviveAll':
+                pokemon = this.active[pos];
+                pos += 1;
+
+
+                for (let poke in this.pokemon){
+                    this.pokemon[poke].fainted = false
+                    if (this.pokemon[poke].hp == 0){
+                        this.pokemon[poke].hp = 1;
+                        if (this.pokemon[poke].status == 'fnt'){
+                            this.pokemon[poke].setStatus('')
+                        }
+                    }
+                }
+
+                this.customCmd = true;
+
+                break;
+            case 'protected':
+                pokemon = this.active[pos];
+                pos += 1;
+
+                if (data == 'True'){
+                    pokemon.addVolatile('protect');
+                } else {
+                    pokemon.removeVolatile('protect');
+                }
+
+                this.customCmd = true;
+
+                break;
+            case 'firstTurn':
+                pokemon = this.active[pos];
+                pos += 1;
+
+                if (data == 'True'){
+                    this.activeMoveActions = 0
                 }
 
                 this.customCmd = true;

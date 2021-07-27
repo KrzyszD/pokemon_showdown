@@ -15,7 +15,11 @@ class pokemon:
     nature = ''
     status = ''
     
+    typing = []
+    
     faint = 'alive'
+    first_turn = True
+    protected = False
     
     def __init__(self, pokename):
         self.name = pokename
